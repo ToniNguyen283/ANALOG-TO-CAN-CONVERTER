@@ -111,7 +111,7 @@ int main(void)
 	  sprintf(msg,"Light: %hu \r\n", lux); //Store lux into msg
 	  HAL_UART_Transmit (&huart2, (uint8_t *)msg, strlen(msg), HAL_MAX_DELAY); //Print output to standard monitor
 
-	  if (lux<800){
+	  if (lux<2000){
 		  HAL_GPIO_WritePin (GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
 	  } else {
 		  HAL_GPIO_WritePin (GPIOA, GPIO_PIN_7, GPIO_PIN_RESET);
