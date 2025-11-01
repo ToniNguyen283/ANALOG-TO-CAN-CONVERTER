@@ -70,26 +70,14 @@ uint32_t TxMailbox;
 
 int datacheck = 0;
 
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
-	if (GPIO_Pin == GPIO_PIN_13)
-	{
-		TxData[0] = 100;   // ms Delay
-		TxData[1] = 40;    // loop rep
-
-		HAL_CAN_AddTxMessage(&hcan, &TxHeader, TxData, &TxMailbox); //send the data
-	}
-}
-
-void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
-{
-	HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData);
+	HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO1, &RxHeader, RxData);
 	if (RxHeader.DLC == 2)
 	{
 		datacheck = 1;
 	}
 }
-
 /* USER CODE END 0 */
 
 /**
@@ -124,18 +112,18 @@ int main(void)
   MX_USART2_UART_Init();
   MX_CAN_Init();
   /* USER CODE BEGIN 2 */
-
   HAL_CAN_Start(&hcan);
 
   // Activate the notification
-  HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING);
+  HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO1_MSG_PENDING);
 
   TxHeader.DLC = 2;  // data length
   TxHeader.IDE = CAN_ID_STD;
   TxHeader.RTR = CAN_RTR_DATA;
   TxHeader.StdId = 0x303;  // ID
 
-
+  TxData[0] = 200;  // ms delay
+  TxData[1] = 20;  // loop rep
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -143,24 +131,23 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+	  HAL_Delay (1000);
+
 	  if (datacheck)
-	  	  {
-	  		  // blink the LED
-	  		  for (int i=0; i<RxData[1]; i++)
-	  		  {
-	  			  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-	  			  HAL_Delay(RxData[0]);
-	  		  }
+	  	  	  {
+	  	  		  // blink the LED
+	  	  		  for (int i=0; i<RxData[1]; i++)
+	  	  		  {
+	  	  			  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+	  	  			  HAL_Delay(RxData[0]);
+	  	  		  }
 
-	  		  datacheck = 0;
+	  	  		  datacheck = 0;
 
-	  			TxData[0] = 100;   // ms Delay
-	  			TxData[1] = 40;    // loop rep
-
-	  			HAL_CAN_AddTxMessage(&hcan, &TxHeader, TxData, &TxMailbox);
-	  	  }
+	  	  		  HAL_CAN_AddTxMessage(&hcan, &TxHeader, TxData, &TxMailbox);
+	  	  	  }
     /* USER CODE BEGIN 3 */
-}
+  }
   /* USER CODE END 3 */
 }
 
@@ -244,18 +231,18 @@ static void MX_CAN_Init(void)
   /* USER CODE BEGIN CAN_Init 2 */
   CAN_FilterTypeDef canfilterconfig;
 
-   canfilterconfig.FilterActivation = CAN_FILTER_ENABLE;
-   canfilterconfig.FilterBank = 0;  // which filter bank to use from the assigned ones
-   canfilterconfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
-   canfilterconfig.FilterIdHigh = 0x303<<5;
-   canfilterconfig.FilterIdLow = 0;
-   canfilterconfig.FilterMaskIdHigh = 0x303<<5;
-   canfilterconfig.FilterMaskIdLow = 0x0000;
-   canfilterconfig.FilterMode = CAN_FILTERMODE_IDMASK;
-   canfilterconfig.FilterScale = CAN_FILTERSCALE_32BIT;
-   canfilterconfig.SlaveStartFilterBank = 0;  // no matter which filters because it is just 1 CAN
+     canfilterconfig.FilterActivation = CAN_FILTER_ENABLE;
+     canfilterconfig.FilterBank = 0;  // which filter bank to use from the assigned ones
+     canfilterconfig.FilterFIFOAssignment = CAN_FILTER_FIFO1;
+     canfilterconfig.FilterIdHigh = 0x303<<5;
+     canfilterconfig.FilterIdLow = 0;
+     canfilterconfig.FilterMaskIdHigh = 0x303<<5;
+     canfilterconfig.FilterMaskIdLow = 0x0000;
+     canfilterconfig.FilterMode = CAN_FILTERMODE_IDMASK;
+     canfilterconfig.FilterScale = CAN_FILTERSCALE_32BIT;
+     canfilterconfig.SlaveStartFilterBank = 0;  // how many filters to assign to the CAN
 
-   HAL_CAN_ConfigFilter(&hcan, &canfilterconfig);
+     HAL_CAN_ConfigFilter(&hcan, &canfilterconfig);
   /* USER CODE END CAN_Init 2 */
 
 }
@@ -314,20 +301,20 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : PC13 */
-  GPIO_InitStruct.Pin = GPIO_PIN_13;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  /*Configure GPIO pin : B1_Pin */
+  GPIO_InitStruct.Pin = B1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PA5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_5;
+  /*Configure GPIO pin : LD2_Pin */
+  GPIO_InitStruct.Pin = LD2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
